@@ -237,10 +237,12 @@ function renderFriday(days, weeklyHours, weekId, assumedFridayStart) {
     return;
   }
 
-  // 하루 기준 gross: 반차면 4h, 일반이면 8h (근로기준법 §54 휴게 포함)
-  const dailyNet   = friday?.leaveType === '반차' ? 4 : 8;
-  const dailyGross = netToGross(dailyNet); // 4h→4.5h, 8h→9h
-  const dailyLabel = friday?.leaveType === '반차' ? '하루 4h 기준 (반차)' : '하루 8h 기준';
+  // 하루 기준 gross: 반차면 4h, 아니면 남은 시간(최대 8h)
+  const dailyNet   = friday?.leaveType === '반차' ? 4 : Math.min(8, remaining);
+  const dailyGross = netToGross(dailyNet);
+  const dailyLabel = friday?.leaveType === '반차' ? '하루 4h 기준 (반차)'
+                   : remaining < 8 ? `남은 ${fmtHours(remaining)} 기준`
+                   : '하루 8h 기준';
 
   // 금요일 실제 출근 기록 > WeeklySettings 예상 출근 > 기본값 09:00
   const prefill = friday?.startTime || assumedFridayStart || '09:00';
@@ -372,7 +374,8 @@ function liveUpdateAll() {
 
   // 금요일 예상 퇴근 재계산
   const friday = days[4];
-  const dailyNet   = friday?.leaveType === '반차' ? 4 : 8;
+  const fridayRemaining = Math.max(0, TARGET - liveWeekly);
+  const dailyNet = friday?.leaveType === '반차' ? 4 : Math.min(8, fridayRemaining);
   const checkinEl  = document.getElementById('friday-checkin');
   if (checkinEl?.value) updateFridayCheckout(checkinEl.value, netToGross(dailyNet));
 }

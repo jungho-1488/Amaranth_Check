@@ -16,43 +16,8 @@ Amaranth HR 시스템에서 출퇴근 확인 버튼을 클릭하면 Google Sheet
 
 ## 설치 가이드
 
-### 1단계: Google Cloud Console 설정
-
-1. [Google Cloud Console](https://console.cloud.google.com/) 접속
-2. 새 프로젝트 생성 (예: `Amaranth-Check`)
-3. **API 및 서비스 → 라이브러리** → `Google Sheets API` 검색 후 **사용** 클릭
-4. **API 및 서비스 → 사용자 인증 정보 → + 사용자 인증 정보 만들기 → OAuth 클라이언트 ID**
-5. 애플리케이션 유형: **웹 애플리케이션** 선택
-6. 리디렉션 URI 등록은 **3단계 이후** 진행 (확장 프로그램 ID가 필요)
-
-### 2단계: Chrome에 확장 프로그램 로드
-
-1. Chrome 주소창에 `chrome://extensions` 입력
-2. 우측 상단 **개발자 모드** ON
-3. **압축해제된 확장 프로그램을 로드합니다** → 이 폴더(`Amaranth_Check`) 선택
-4. 카드에 표시된 **확장 프로그램 ID** 복사 (32자리 영문)
-
-### 3단계: Redirect URI 등록
-
-1. Google Cloud Console → OAuth 클라이언트 ID 수정
-2. **승인된 리디렉션 URI** 에 아래 형식으로 추가:
-   ```
-   https://{확장프로그램ID}.chromiumapp.org/
-   ```
-   예시: `https://abcdefghijklmnopqrstuvwxyzabcdef.chromiumapp.org/`
-3. 저장
-
-> **팁**: 확장 프로그램 팝업 → 설정 페이지에서 **Redirect URI**가 자동으로 표시됩니다. 복사 버튼으로 클립보드에 복사하세요.
-
-### 4단계: 확장 프로그램 설정
-
-1. Chrome 툴바에서 확장 프로그램 아이콘 클릭 → **⚙ 설정**
-2. **Client ID** 와 **Client Secret** 입력 (Google Cloud Console에서 복사)
-3. **Spreadsheet ID** 입력:
-   - 시트 URL의 `/d/` 와 `/edit` 사이 값
-   - 예: `1O53G4kisu2hCERDlUowk85s7p3qYnt13TucVbEy_wf8`
-4. **저장** 클릭
-5. **Google 인증** 버튼 클릭 → Google 계정 로그인 및 권한 허용
+처음 설치하는 경우 **[setup/README.md](setup/README.md)** 를 참고하세요.
+GCP 설정부터 확장프로그램 설치까지 단계별로 안내합니다.
 
 ---
 
