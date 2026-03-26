@@ -7,6 +7,23 @@ Amaranth HR 시스템에서 출퇴근 확인 버튼을 누르면 **내 Google Sh
 
 ---
 
+## 파일 받기
+
+1. 아래 GitHub 링크에 접속합니다:
+   [github.com/jungho-1488/Amaranth_Check](https://github.com/jungho-1488/Amaranth_Check)
+
+2. 초록색 **"< > Code"** 버튼 클릭 → **"Download ZIP"** 클릭
+
+3. 다운로드된 ZIP 파일을 압축 해제합니다
+   - Mac: 파일 더블클릭
+   - Windows: 우클릭 → "압축 풀기"
+
+4. 압축을 풀면 **`Amaranth_Check`** 폴더가 생깁니다
+   - 이 폴더 안에 `setup/`, `popup.js`, `manifest.json` 등이 있어야 합니다
+   - 이후 단계에서 이 폴더를 계속 사용합니다
+
+---
+
 ## 시작 전 준비
 
 ### 1. Node.js 설치 확인
