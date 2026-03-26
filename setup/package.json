@@ -1,0 +1,15 @@
+{
+  "name": "amaranth-check-setup",
+  "version": "1.0.0",
+  "description": "Amaranth 출퇴근 체크 - Google Sheets 초기 설정 스크립트",
+  "main": "setup.js",
+  "scripts": {
+    "start": "node setup.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "googleapis": "^144.0.0"
+  }
+}

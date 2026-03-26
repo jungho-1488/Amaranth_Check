@@ -1,0 +1,9 @@
+/.env
+/README.md
+/background.js
+/content.js
+/manifest.json
+/options.html
+/options.js
+/popup.html
+/popup.js
