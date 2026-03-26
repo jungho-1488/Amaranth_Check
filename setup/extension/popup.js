@@ -130,13 +130,13 @@ function buildTimeGrid(day, isWorking) {
         <div class="label">출근</div>
         ${startVal}
       </div>
-      <div class="time-box${isWorking ? ' working' : ''}">
-        <div class="label">퇴근</div>
-        ${endVal}
-      </div>
       <div class="time-box">
         <div class="label">순근무</div>
         ${netVal}
+      </div>
+      <div class="time-box${isWorking ? ' working' : ''}">
+        <div class="label">퇴근</div>
+        ${endVal}
       </div>
     </div>
   `;
@@ -197,12 +197,14 @@ function buildDayRow(d) {
   // 연차·반차·공휴일·출퇴근 기록이 있으면 시간 표시 (미래 예정 연차도 포함)
   const hasRecord = d.isHoliday || d.leaveType || d.startTime;
   const hoursText = hasRecord ? fmtHours(d.netHours) : '–';
+  // 오늘 근무 중이면 id 부여 → liveUpdateAll에서 실시간 업데이트
+  const hoursId = (d.isToday && d.startTime && !d.endTime) ? ' id="live-day-hours"' : '';
 
   return `
     <div class="${rowClass}">
       <span class="day-name">${dayName}</span>
       <span class="day-times">${timesHtml}</span>
-      <span class="${hoursClass}">${hoursText}</span>
+      <span class="${hoursClass}"${hoursId}>${hoursText}</span>
     </div>
   `;
 }
@@ -339,6 +341,10 @@ function liveUpdateAll() {
   // 오늘 카드 순근무 업데이트
   const netEl = document.getElementById('live-net');
   if (netEl) netEl.textContent = fmtHours(todayNet);
+
+  // 주간 카드 오늘 행 시간 업데이트
+  const dayHoursEl = document.getElementById('live-day-hours');
+  if (dayHoursEl) dayHoursEl.textContent = fmtHours(todayNet);
 
   // 실시간 주간 합계 = 저장된 합계 - 오늘 저장값 + 오늘 현재값
   const liveWeekly = baseWeekly - today.netHours + todayNet;
