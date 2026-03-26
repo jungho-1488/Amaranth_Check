@@ -4,6 +4,7 @@ const DAY_KO   = ['일', '월', '화', '수', '목', '금', '토'];
 const DAY_FULL = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
 let liveTimerID    = null;
 let fridaySaveTimer = null;
+let dashboardData  = null; // 실시간 업데이트용 전역 캐시
 
 // ── 초기화 ──────────────────────────────────────────────────────────────────
 
@@ -50,12 +51,14 @@ function fetchDashboard() {
 // ── 렌더링 ──────────────────────────────────────────────────────────────────
 
 function renderDashboard(data) {
+  dashboardData = data;
   const { days, weeklyHours, weekDates, assumedFridayStart } = data;
   const today = days.find(d => d.isToday);
 
   renderToday(today);
   renderWeekly(days, weeklyHours);
   renderFriday(days, weeklyHours, weekDates[0], assumedFridayStart);
+  startLiveUpdates();
 }
 
 // ─ 오늘 카드 ────────────────────────────────────────────────────────────────
@@ -90,20 +93,6 @@ function renderToday(day) {
     ${buildTimeGrid(day, isWorking)}
   `;
 
-  // 근무 중이면 1분마다 실시간 업데이트
-  if (isWorking) {
-    liveTimerID = setInterval(() => {
-      const netEl = document.getElementById('live-net');
-      if (netEl) {
-        const now2   = new Date();
-        const endT   = formatTime(now2);
-        const gross  = calcGrossHours(day.startTime, endT);
-        const net    = applyBreak(gross);
-        const extra  = day.leaveType === '반차' ? 4 : 0;
-        netEl.textContent = fmtHours(net + extra);
-      }
-    }, 60_000);
-  }
 }
 
 function buildTimeGrid(day, isWorking) {
@@ -255,7 +244,7 @@ function renderFriday(days, weeklyHours, weekId, assumedFridayStart) {
   const prefill = friday?.startTime || assumedFridayStart || '09:00';
 
   body.innerHTML = `
-    <div class="fri-summary">
+    <div class="fri-summary" id="fri-summary">
       주간 누적 <span class="em">${fmtHours(weeklyHours)}</span><span class="sep">|</span>남은 시간 <span class="em">${fmtHours(remaining)}</span>
     </div>
     <div class="fri-calc">
@@ -319,6 +308,67 @@ function netToGross(net) {
   if (net >= 7)   return net + 1;    // gross = net+1 ≥ 8 → 1h 공제 성립
   if (net >= 3.5) return net + 0.5;  // gross = net+0.5 ≥ 4 → 30m 공제 성립
   return net;
+}
+
+// ─ 실시간 업데이트 ────────────────────────────────────────────────────────────
+
+function startLiveUpdates() {
+  if (liveTimerID) { clearInterval(liveTimerID); liveTimerID = null; }
+
+  const today = dashboardData?.days?.find(d => d.isToday);
+  const isWorking = today?.startTime && !today?.endTime
+                 && !today?.isHoliday && today?.leaveType !== '연차';
+  if (!isWorking) return;
+
+  liveUpdateAll(); // 즉시 1회 실행
+  liveTimerID = setInterval(liveUpdateAll, 60_000);
+}
+
+function liveUpdateAll() {
+  if (!dashboardData) return;
+  const { days, weeklyHours: baseWeekly } = dashboardData;
+  const today = days.find(d => d.isToday);
+  if (!today?.startTime || today.endTime) return;
+
+  // 오늘 현재 순근무
+  const gross   = calcGrossHours(today.startTime, formatTime(new Date()));
+  const net     = applyBreak(gross);
+  const extra   = today.leaveType === '반차' ? 4 : 0;
+  const todayNet = Math.max(0, net + extra);
+
+  // 오늘 카드 순근무 업데이트
+  const netEl = document.getElementById('live-net');
+  if (netEl) netEl.textContent = fmtHours(todayNet);
+
+  // 실시간 주간 합계 = 저장된 합계 - 오늘 저장값 + 오늘 현재값
+  const liveWeekly = baseWeekly - today.netHours + todayNet;
+
+  // 주간 카드 업데이트
+  const TARGET = 40;
+  const pct = Math.min((liveWeekly / TARGET) * 100, 100);
+  const summaryEl = document.getElementById('weekly-summary');
+  const fillEl    = document.getElementById('progress-fill');
+  if (summaryEl) summaryEl.textContent = `${fmtHours(liveWeekly)} / ${TARGET}h`;
+  if (fillEl) {
+    fillEl.style.width = `${pct}%`;
+    fillEl.className = 'progress-fill' +
+      (liveWeekly >= TARGET ? ' over' : liveWeekly >= TARGET * 0.9 ? ' warn' : '');
+  }
+
+  // 금요일 카드 요약 업데이트
+  const friSummary = document.getElementById('fri-summary');
+  if (friSummary) {
+    const remaining = Math.max(0, TARGET - liveWeekly);
+    friSummary.innerHTML =
+      `주간 누적 <span class="em">${fmtHours(liveWeekly)}</span>` +
+      `<span class="sep">|</span>남은 시간 <span class="em">${fmtHours(remaining)}</span>`;
+  }
+
+  // 금요일 예상 퇴근 재계산
+  const friday = days[4];
+  const dailyNet   = friday?.leaveType === '반차' ? 4 : 8;
+  const checkinEl  = document.getElementById('friday-checkin');
+  if (checkinEl?.value) updateFridayCheckout(checkinEl.value, netToGross(dailyNet));
 }
 
 // ─ 오류 렌더링 ────────────────────────────────────────────────────────────────
