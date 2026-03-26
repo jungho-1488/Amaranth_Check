@@ -4,6 +4,14 @@
 # Claude Code 설정
 .claude/
 
+# 개인 확장 프로그램 파일 (각자 직접 작성)
+/*.js
+/*.html
+/*.json
+!setup/
+README.md
+OVERVIEW.md
+
 # setup 폴더 민감 파일 (절대 커밋하면 안 됨)
 setup/credentials.json
 setup/.token.json
