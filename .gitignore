@@ -1,9 +1,11 @@
-/.env
-/README.md
-/background.js
-/content.js
-/manifest.json
-/options.html
-/options.js
-/popup.html
-/popup.js
+# 환경 변수
+.env
+
+# Claude Code 설정
+.claude/
+
+# setup 폴더 민감 파일 (절대 커밋하면 안 됨)
+setup/credentials.json
+setup/.token.json
+setup/result.txt
+setup/node_modules/
