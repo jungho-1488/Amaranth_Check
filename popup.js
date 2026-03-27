@@ -31,11 +31,11 @@ document.getElementById('day-list').addEventListener('click', (e) => {
   panel.innerHTML = `
     <div class="edit-row">
       <span class="edit-label">출근</span>
-      <input type="time" id="edit-start" step="60" value="${row.dataset.start || ''}" />
+      <input type="text" id="edit-start" placeholder="HH:MM" maxlength="5" value="${row.dataset.start || ''}" class="edit-time-input" />
     </div>
     <div class="edit-row">
       <span class="edit-label">퇴근</span>
-      <input type="time" id="edit-end" step="60" value="${row.dataset.end || ''}" />
+      <input type="text" id="edit-end" placeholder="HH:MM" maxlength="5" value="${row.dataset.end || ''}" class="edit-time-input" />
     </div>
     <div class="edit-actions">
       <button class="edit-btn-save">저장</button>
@@ -44,6 +44,18 @@ document.getElementById('day-list').addEventListener('click', (e) => {
     <div class="edit-msg" id="edit-msg"></div>
   `;
   row.insertAdjacentElement('afterend', panel);
+
+  // HH:MM 자동 포맷
+  panel.querySelectorAll('.edit-time-input').forEach(inp => {
+    inp.addEventListener('input', e => {
+      let v = e.target.value.replace(/[^0-9:]/g, '');
+      if (v.length === 2 && !v.includes(':') && e.inputType !== 'deleteContentBackward') v = v + ':';
+      if (v.length > 5) v = v.slice(0, 5);
+      e.target.value = v;
+      const valid = /^([01]\d|2[0-3]):([0-5]\d)$/.test(v);
+      e.target.style.borderColor = valid ? '' : '#e53935';
+    });
+  });
 
   panel.querySelector('.edit-btn-cancel').addEventListener('click', () => {
     panel.remove();
@@ -55,6 +67,8 @@ document.getElementById('day-list').addEventListener('click', (e) => {
     const endTime   = document.getElementById('edit-end').value;
     const msgEl     = document.getElementById('edit-msg');
     if (!startTime) { msgEl.textContent = '출근 시간을 입력하세요'; return; }
+    if (!/^([01]\d|2[0-3]):([0-5]\d)$/.test(startTime)) { msgEl.textContent = '올바른 시간 형식으로 입력하세요 (예: 09:00)'; return; }
+    if (endTime && !/^([01]\d|2[0-3]):([0-5]\d)$/.test(endTime)) { msgEl.textContent = '퇴근 시간 형식을 확인하세요 (예: 18:30)'; return; }
     msgEl.textContent = '저장 중...';
     chrome.runtime.sendMessage(
       { action: 'updateAttendance', date: row.dataset.date, startTime, endTime },
