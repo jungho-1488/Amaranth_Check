@@ -275,8 +275,8 @@ function buildDashboardData(attendanceRows, holidayRows, leaveRows, weekSettingR
     const holidayName = isHoliday ? (holidayMap[date][1] || '공휴일') : '';
     const leaveType   = leaveMap[date]?.[1] || null;
     const attendance  = attendanceMap[date];
-    const startTime   = attendance?.[1] || '';
-    const endTime     = attendance?.[2] || '';
+    const startTime   = attendance?.[1] ? normalizeTime(attendance[1]) : '';
+    const endTime     = attendance?.[2] ? normalizeTime(attendance[2]) : '';
 
     // ── 근무시간 계산 ──────────────────────────────────────────────
     // 근로기준법 제54조: 4h 이상 → 30분, 8h 이상 → 1시간 휴게 공제
