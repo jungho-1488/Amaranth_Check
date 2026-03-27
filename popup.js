@@ -290,7 +290,8 @@ function renderFriday(days, weeklyHours, weekId, assumedFridayStart) {
 
   const TARGET   = 40;
   const friday   = days[4]; // days[4] = 금요일
-  const remaining = Math.max(0, TARGET - weeklyHours);
+  // 금요일 근무시간을 제외한 월~목 기준으로 remaining 계산
+  const remaining = Math.max(0, TARGET - weeklyHours + (friday?.netHours || 0));
 
   // 목표 달성
   if (weeklyHours >= TARGET) {
@@ -448,18 +449,15 @@ function liveUpdateAll() {
       (liveWeekly >= TARGET ? ' over' : liveWeekly >= TARGET * 0.9 ? ' warn' : '');
   }
 
-  // 금요일 카드 요약 업데이트
+  // 금요일 카드 요약 업데이트 (남은 시간은 월~목 기준 고정)
+  const friday = days[4];
+  const fridayRemaining = Math.max(0, TARGET - liveWeekly + todayNet);
   const friSummary = document.getElementById('fri-summary');
   if (friSummary) {
-    const remaining = Math.max(0, TARGET - liveWeekly);
     friSummary.innerHTML =
       `주간 누적 <span class="em">${fmtHours(liveWeekly)}</span>` +
-      `<span class="sep">|</span>남은 시간 <span class="em">${fmtHours(remaining)}</span>`;
+      `<span class="sep">|</span>남은 시간 <span class="em">${fmtHours(fridayRemaining)}</span>`;
   }
-
-  // 금요일 예상 퇴근 재계산
-  const friday = days[4];
-  const fridayRemaining = Math.max(0, TARGET - liveWeekly);
   const dailyNet = friday?.leaveType === '반차' ? 4 : Math.min(8, fridayRemaining);
   const checkinEl = document.getElementById('friday-checkin');
   // 실제 금요일 출근 시간이 확정되면 입력 필드에 반영 (WeeklySettings 값보다 우선)
