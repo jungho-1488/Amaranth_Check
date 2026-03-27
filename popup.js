@@ -176,9 +176,9 @@ function buildTimeGrid(day, isWorking) {
     return `<div class="today-no-record" style="color:#1565c0">연차 (8h 인정)</div>`;
   }
 
-  const startVal = day.startTime ? `<span class="value">${day.startTime}</span>`
+  const startVal = day.startTime ? `<span class="value">${padTime(day.startTime)}</span>`
                                  : `<span class="value muted">–</span>`;
-  const endVal   = day.endTime   ? `<span class="value">${day.endTime}</span>`
+  const endVal   = day.endTime   ? `<span class="value">${padTime(day.endTime)}</span>`
                  : isWorking     ? `<span class="value" style="color:#fb8c00">근무중</span>`
                                  : `<span class="value muted">–</span>`;
 
@@ -253,11 +253,11 @@ function buildDayRow(d) {
     timesHtml = `<span class="em">✈ 연차</span>`;
     hoursClass += ' h-leave';
   } else if (d.leaveType === '반차') {
-    const t = d.startTime ? `${d.startTime}→${d.endTime || '근무중'}` : '';
+    const t = d.startTime ? `${padTime(d.startTime)}→${d.endTime ? padTime(d.endTime) : '근무중'}` : '';
     timesHtml = t ? `${t} · <span class="em">◑ 반차</span>` : `<span class="em">◑ 반차</span>`;
     hoursClass += ' h-halfleave';
   } else if (d.startTime) {
-    const arrow = d.endTime ? `${d.startTime}→${d.endTime}` : `${d.startTime}→근무중`;
+    const arrow = d.endTime ? `${padTime(d.startTime)}→${padTime(d.endTime)}` : `${padTime(d.startTime)}→근무중`;
     timesHtml = arrow;
     hoursClass += ' h-worked';
   } else if (d.isFuture) {
@@ -274,7 +274,7 @@ function buildDayRow(d) {
   const hoursId = (d.isToday && d.startTime && !d.endTime) ? ' id="live-day-hours"' : '';
 
   return `
-    <div class="${rowClass}" data-date="${d.date}" data-start="${d.startTime}" data-end="${d.endTime}" style="cursor:pointer">
+    <div class="${rowClass}" data-date="${d.date}" data-start="${padTime(d.startTime)}" data-end="${padTime(d.endTime)}" style="cursor:pointer">
       <span class="day-name">${dayName}</span>
       <span class="day-times">${timesHtml}</span>
       <span class="${hoursClass}"${hoursId}>${hoursText}</span>
@@ -318,7 +318,7 @@ function renderFriday(days, weeklyHours, weekId, assumedFridayStart) {
                    : '하루 8h 기준';
 
   // 금요일 실제 출근 기록 > WeeklySettings 예상 출근 > 기본값 09:00
-  const prefill = friday?.startTime || assumedFridayStart || '09:00';
+  const prefill = padTime(friday?.startTime || assumedFridayStart) || '09:00';
 
   body.innerHTML = `
     <div class="fri-summary" id="fri-summary">
@@ -531,6 +531,13 @@ function todayStr() {
 
 function formatTime(date) {
   return `${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
+}
+
+// "9:02" → "09:02" (캐시된 구 데이터도 표시 시점에 정규화)
+function padTime(t) {
+  if (!t) return t;
+  const [h = '0', m = '00'] = String(t).split(':');
+  return `${h.padStart(2, '0')}:${m.padStart(2, '0')}`;
 }
 
 function calcGrossHours(start, end) {
