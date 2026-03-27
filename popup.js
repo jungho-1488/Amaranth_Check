@@ -313,7 +313,7 @@ function renderFriday(days, weeklyHours, weekId, assumedFridayStart) {
     <div class="fri-calc">
       <div class="fri-row">
         <span class="label">금요일 출근</span>
-        <input type="time" id="friday-checkin" step="60" value="${prefill}" />
+        <input type="text" id="friday-checkin" placeholder="09:00" maxlength="5" value="${prefill}" class="fri-time-input" />
       </div>
       <div class="fri-row" style="margin-top:2px">
         <span class="label">예상 퇴근 <span class="fri-basis">${dailyLabel}</span></span>
@@ -324,13 +324,25 @@ function renderFriday(days, weeklyHours, weekId, assumedFridayStart) {
   `;
 
   const input = document.getElementById('friday-checkin');
+
+  // HH:MM 자동 포맷 (숫자 입력 시 콜론 자동 삽입)
   input.addEventListener('input', e => {
-    updateFridayCheckout(e.target.value, dailyGross);
-    // 1.5초 debounce 후 WeeklySettings 시트에 저장
+    let v = e.target.value.replace(/[^0-9:]/g, '');
+    if (v.length === 2 && !v.includes(':') && e.inputType !== 'deleteContentBackward') {
+      v = v + ':';
+    }
+    if (v.length > 5) v = v.slice(0, 5);
+    e.target.value = v;
+
+    const valid = /^([01]\d|2[0-3]):([0-5]\d)$/.test(v);
+    e.target.style.borderColor = valid ? '' : '#e53935';
+    if (!valid) return;
+
+    updateFridayCheckout(v, dailyGross);
     clearTimeout(fridaySaveTimer);
-    if (e.target.value && weekId) {
+    if (weekId) {
       fridaySaveTimer = setTimeout(() => {
-        chrome.runtime.sendMessage({ action: 'saveWeekSetting', weekId, assumedStartTime: e.target.value });
+        chrome.runtime.sendMessage({ action: 'saveWeekSetting', weekId, assumedStartTime: v });
       }, 1500);
     }
   });
@@ -435,7 +447,11 @@ function liveUpdateAll() {
   const friday = days[4];
   const fridayRemaining = Math.max(0, TARGET - liveWeekly);
   const dailyNet = friday?.leaveType === '반차' ? 4 : Math.min(8, fridayRemaining);
-  const checkinEl  = document.getElementById('friday-checkin');
+  const checkinEl = document.getElementById('friday-checkin');
+  // 실제 금요일 출근 시간이 확정되면 입력 필드에 반영 (WeeklySettings 값보다 우선)
+  if (checkinEl && friday?.startTime && checkinEl.value !== friday.startTime) {
+    checkinEl.value = friday.startTime;
+  }
   if (checkinEl?.value) updateFridayCheckout(checkinEl.value, netToGross(dailyNet));
 }
 
