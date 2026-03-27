@@ -120,6 +120,7 @@
       font-size: 14px;
       font-weight: 700;
       color: #1a73e8;
+      text-transform: none;
     }
     .progress-track {
       background: #e8eaf6;
@@ -172,10 +173,13 @@
       font-weight: 700;
       font-size: 12px;
       color: #333;
-      width: 52px;
-      text-align: right;
       flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      font-variant-numeric: tabular-nums;
     }
+    .dur-num { display: inline-block; min-width: 2ch; text-align: right; }
     .day-hours.h-holiday   { color: #e53935; }
     .day-hours.h-leave     { color: #1565c0; }
     .day-hours.h-halfleave { color: #2e7d32; }

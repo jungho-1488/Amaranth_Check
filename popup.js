@@ -253,11 +253,11 @@ function buildDayRow(d) {
     timesHtml = `<span class="em">✈ 연차</span>`;
     hoursClass += ' h-leave';
   } else if (d.leaveType === '반차') {
-    const t = d.startTime ? `${padTime(d.startTime)}→${d.endTime ? padTime(d.endTime) : '근무중'}` : '';
+    const t = d.startTime ? `${padTime(d.startTime)} → ${d.endTime ? padTime(d.endTime) : '근무중'}` : '';
     timesHtml = t ? `${t} · <span class="em">◑ 반차</span>` : `<span class="em">◑ 반차</span>`;
     hoursClass += ' h-halfleave';
   } else if (d.startTime) {
-    const arrow = d.endTime ? `${padTime(d.startTime)}→${padTime(d.endTime)}` : `${padTime(d.startTime)}→근무중`;
+    const arrow = d.endTime ? `${padTime(d.startTime)} → ${padTime(d.endTime)}` : `${padTime(d.startTime)} → 근무중`;
     timesHtml = arrow;
     hoursClass += ' h-worked';
   } else if (d.isFuture) {
@@ -269,7 +269,7 @@ function buildDayRow(d) {
 
   // 연차·반차·공휴일·출퇴근 기록이 있으면 시간 표시 (미래 예정 연차도 포함)
   const hasRecord = d.isHoliday || d.leaveType || d.startTime;
-  const hoursText = hasRecord ? fmtHours(d.netHours) : '–';
+  const hoursHtml = hasRecord ? fmtHoursHtml(d.netHours) : '–';
   // 오늘 근무 중이면 id 부여 → liveUpdateAll에서 실시간 업데이트
   const hoursId = (d.isToday && d.startTime && !d.endTime) ? ' id="live-day-hours"' : '';
 
@@ -277,7 +277,7 @@ function buildDayRow(d) {
     <div class="${rowClass}" data-date="${d.date}" data-start="${padTime(d.startTime)}" data-end="${padTime(d.endTime)}" style="cursor:pointer">
       <span class="day-name">${dayName}</span>
       <span class="day-times">${timesHtml}</span>
-      <span class="${hoursClass}"${hoursId}>${hoursText}</span>
+      <span class="${hoursClass}"${hoursId}>${hoursHtml}</span>
     </div>
   `;
 }
@@ -431,7 +431,7 @@ function liveUpdateAll() {
 
   // 주간 카드 오늘 행 시간 업데이트
   const dayHoursEl = document.getElementById('live-day-hours');
-  if (dayHoursEl) dayHoursEl.textContent = fmtHours(todayNet);
+  if (dayHoursEl) dayHoursEl.innerHTML = fmtHoursHtml(todayNet);
 
   // 실시간 주간 합계 = 저장된 합계 - 오늘 저장값 + 오늘 현재값
   const liveWeekly = baseWeekly - today.netHours + todayNet;
@@ -561,6 +561,15 @@ function fmtHours(h) {
   if (mins === 0) return `${hours}h`;
   if (hours === 0) return `${mins}m`;
   return `${hours}h ${mins}m`;
+}
+
+function fmtHoursHtml(h) {
+  if (h <= 0) return '<span class="dur-num">0</span>h';
+  const hours = Math.floor(h);
+  const mins  = Math.round((h - hours) * 60);
+  const hPart = `<span class="dur-num">${hours}</span>h`;
+  const mPart = mins > 0 ? `\u00A0<span class="dur-num">${mins}</span>m` : '';
+  return hPart + mPart;
 }
 
 function escHtml(str) {
