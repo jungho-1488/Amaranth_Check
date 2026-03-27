@@ -11,6 +11,65 @@ let dashboardData  = null; // 실시간 업데이트용 전역 캐시
 document.getElementById('btn-settings').addEventListener('click', () => chrome.runtime.openOptionsPage());
 document.getElementById('btn-close').addEventListener('click', () => window.close());
 document.getElementById('btn-refresh').addEventListener('click', () => loadDashboard(true));
+
+// 날짜 행 클릭 → 수정 폼
+document.getElementById('day-list').addEventListener('click', (e) => {
+  if (e.target.closest('.edit-panel')) return; // 폼 내부 클릭 무시
+  const row = e.target.closest('.day-row');
+  if (!row || !row.dataset.date) return;
+
+  // 이미 열린 폼 닫기
+  const existing = document.querySelector('.edit-panel');
+  const wasThis = existing && existing.previousElementSibling === row;
+  document.querySelectorAll('.edit-panel').forEach(p => p.remove());
+  document.querySelectorAll('.day-row.editing').forEach(r => r.classList.remove('editing'));
+  if (wasThis) return; // 같은 행 재클릭 시 토글 닫기
+
+  row.classList.add('editing');
+  const panel = document.createElement('div');
+  panel.className = 'edit-panel';
+  panel.innerHTML = `
+    <div class="edit-row">
+      <span class="edit-label">출근</span>
+      <input type="time" id="edit-start" step="60" value="${row.dataset.start || ''}" />
+    </div>
+    <div class="edit-row">
+      <span class="edit-label">퇴근</span>
+      <input type="time" id="edit-end" step="60" value="${row.dataset.end || ''}" />
+    </div>
+    <div class="edit-actions">
+      <button class="edit-btn-save">저장</button>
+      <button class="edit-btn-cancel">취소</button>
+    </div>
+    <div class="edit-msg" id="edit-msg"></div>
+  `;
+  row.insertAdjacentElement('afterend', panel);
+
+  panel.querySelector('.edit-btn-cancel').addEventListener('click', () => {
+    panel.remove();
+    row.classList.remove('editing');
+  });
+
+  panel.querySelector('.edit-btn-save').addEventListener('click', () => {
+    const startTime = document.getElementById('edit-start').value;
+    const endTime   = document.getElementById('edit-end').value;
+    const msgEl     = document.getElementById('edit-msg');
+    if (!startTime) { msgEl.textContent = '출근 시간을 입력하세요'; return; }
+    msgEl.textContent = '저장 중...';
+    chrome.runtime.sendMessage(
+      { action: 'updateAttendance', date: row.dataset.date, startTime, endTime },
+      (response) => {
+        if (chrome.runtime.lastError || !response?.success) {
+          msgEl.textContent = response?.error || '저장 실패';
+          return;
+        }
+        panel.remove();
+        row.classList.remove('editing');
+        loadDashboard(true);
+      }
+    );
+  });
+});
 // 빠른 휴가 추가 (주간 카드 헤더 버튼)
 document.getElementById('btn-leave-quick').addEventListener('click', () => {
   const form = document.getElementById('quick-leave-form');
@@ -201,7 +260,7 @@ function buildDayRow(d) {
   const hoursId = (d.isToday && d.startTime && !d.endTime) ? ' id="live-day-hours"' : '';
 
   return `
-    <div class="${rowClass}">
+    <div class="${rowClass}" data-date="${d.date}" data-start="${d.startTime}" data-end="${d.endTime}" style="cursor:pointer">
       <span class="day-name">${dayName}</span>
       <span class="day-times">${timesHtml}</span>
       <span class="${hoursClass}"${hoursId}>${hoursText}</span>

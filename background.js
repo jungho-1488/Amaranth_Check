@@ -13,6 +13,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     getDashboardData:  handleGetDashboardData,
     addLeave:          handleAddLeave,
     saveWeekSetting:   handleSaveWeekSetting,
+    updateAttendance:  handleUpdateAttendance,
     signOut:           handleSignOut,
   };
   const fn = handlers[msg.action];
@@ -309,6 +310,43 @@ function buildDashboardData(attendanceRows, holidayRows, leaveRows, weekSettingR
 }
 
 // ══════════════════════════════════════════════════════════════════
+//  출퇴근 수정
+// ══════════════════════════════════════════════════════════════════
+
+async function handleUpdateAttendance({ date, startTime, endTime }) {
+  const token = await getAuthToken();
+  const { spreadsheetId, sheetName } = await getSheetConfig();
+
+  const readRes = await sheetsRequest(token, 'GET', `${spreadsheetId}/values/${enc(sheetName + '!A:A')}`);
+  if (!readRes.ok) throw new Error(`시트 읽기 실패: ${readRes.status}`);
+
+  const { values = [] } = await readRes.json();
+  let rowNumber = -1;
+  for (let i = values.length - 1; i >= 0; i--) {
+    if (values[i][0] === date) { rowNumber = i + 1; break; }
+  }
+
+  if (rowNumber < 1) {
+    // 해당 날짜 행 없으면 새로 추가
+    const res = await sheetsRequest(token, 'POST',
+      `${spreadsheetId}/values/${enc(sheetName + '!A:C')}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`,
+      { values: [[date, startTime, endTime || '']] }
+    );
+    if (!res.ok) throw new Error(`추가 실패: ${await getErrMsg(res)}`);
+  } else {
+    // 기존 행 출근/퇴근 시간 덮어쓰기
+    const res = await sheetsRequest(token, 'PUT',
+      `${spreadsheetId}/values/${enc(sheetName + '!B' + rowNumber + ':C' + rowNumber)}?valueInputOption=USER_ENTERED`,
+      { values: [[startTime, endTime || '']] }
+    );
+    if (!res.ok) throw new Error(`수정 실패: ${await getErrMsg(res)}`);
+  }
+
+  await storageRemove(['dashboardCache']);
+  return { message: `${date} 수정 완료` };
+}
+
+// ══════════════════════════════════════════════════════════════════
 //  반차/연차 추가
 // ══════════════════════════════════════════════════════════════════
 
@@ -437,9 +475,13 @@ async function getConfig() {
 
 async function getSheetConfig() {
   const cfg = await getConfig();
+  const spreadsheetId = cfg.spreadsheetId || DEFAULT_SPREADSHEET_ID;
+  if (!spreadsheetId) {
+    throw new Error('Spreadsheet ID가 설정되지 않았습니다.\n설정 페이지에서 입력해주세요.');
+  }
   return {
-    spreadsheetId: cfg.spreadsheetId || DEFAULT_SPREADSHEET_ID,
-    sheetName:     cfg.sheetName     || '출퇴근 기록부',
+    spreadsheetId,
+    sheetName: cfg.sheetName || '출퇴근 기록부',
   };
 }
 
